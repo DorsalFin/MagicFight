@@ -38,7 +38,7 @@ public class RuneManager : MonoBehaviour
         {
             _timerLeft += Time.deltaTime;
 
-            leftCaster.runeTimeFillImage.fillAmount = _timerLeft / runeTime;
+            //leftCaster.runeTimeFillImage.fillAmount = _timerLeft / runeTime;
 
             if (_timerLeft > runeTime)
                 CastRune(leftCaster);
@@ -48,7 +48,7 @@ public class RuneManager : MonoBehaviour
         {
             _timerRight += Time.deltaTime;
 
-            rightCaster.runeTimeFillImage.fillAmount = _timerRight / runeTime;
+            //rightCaster.runeTimeFillImage.fillAmount = _timerRight / runeTime;
 
             if (_timerRight > runeTime)
                 CastRune(rightCaster);
@@ -73,8 +73,10 @@ public class RuneManager : MonoBehaviour
     public void StartRune(Rune rune, Caster caster)
     {
         caster.activeRune = rune;
-        caster.runeTimeFillImage.fillAmount = 0f;
-        caster.runeTimeRoot.SetActive(true);
+        caster.anim.Play("Summon");
+
+        //caster.runeTimeFillImage.fillAmount = 0f;
+        //caster.runeTimeRoot.SetActive(true);
 
         Caster otherCaster = OtherCaster(caster);
 
@@ -84,8 +86,8 @@ public class RuneManager : MonoBehaviour
             _countingRight = false;
             _countingLeft = false;
 
-            otherCaster.RuneCounteredCallback();
             caster.HideCurrentRuneCallback();
+            otherCaster.MyRuneWasCounteredCallback();
         }
         else
         {
@@ -99,6 +101,17 @@ public class RuneManager : MonoBehaviour
                 _timerLeft = 0f;
                 _countingLeft = true;
             }
+
+            if (otherCaster is AIOpponent && otherCaster.activeRune == null)
+            {
+                AIOpponent ai = otherCaster as AIOpponent;
+                bool countering = ai.ChanceToCounterRune(rune);
+                if (countering)
+                {
+                    _timerRight = 0f;
+                    _countingRight = false;
+                }
+            }
         }
     }
 
@@ -107,21 +120,22 @@ public class RuneManager : MonoBehaviour
         // BOOM we hit for the rune's damage
 
         Caster otherCaster = OtherCaster(caster);
-
+        if (otherCaster.activeRune != null)
+            otherCaster.MyRuneWasCounteredCallback();
         otherCaster.HitByRune(caster.activeRune);
 
         caster.RuneCastCallback();
 
-        if (caster == leftCaster)
-        {
+        //if (caster == leftCaster)
+        //{
             _countingLeft = false;
             _timerLeft = 0f;
-        }
-        else
-        {
+        //}
+        //else
+        //{
             _countingRight = false;
             _timerRight = 0f;
-        }
+        //}
     }
 
     Caster OtherCaster(Caster caster)

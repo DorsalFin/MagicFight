@@ -21,8 +21,10 @@ public class Caster : MonoBehaviour
     public GameObject myHealthBarRoot;
     public Image myHealthBarFillImage;
 
-    public GameObject runeTimeRoot;
-    public Image runeTimeFillImage;
+    public Animator anim;
+
+    //public GameObject runeTimeRoot;
+    //public Image runeTimeFillImage;
 
     public float counterStunnedTime = 1f;
     public Image myRuneWasblockedImage;
@@ -39,16 +41,17 @@ public class Caster : MonoBehaviour
     {
         _currentHealth = totalHealth;
         myHealthBarFillImage.fillAmount = 1f;
-        runeTimeFillImage.fillAmount = 0f;
-        runeTimeRoot.SetActive(false);
+        //runeTimeFillImage.fillAmount = 0f;
+        //runeTimeRoot.SetActive(false);
     }
 
     public virtual void RuneCastCallback() { }
 
-    public virtual void RuneCounteredCallback()
+    public virtual void MyRuneWasCounteredCallback()
     {
         // do something here if something extra should happen when ebing countered
         myState = CasterState.stunned;
+        anim.Play("Block");
         myRuneWasblockedImage.gameObject.SetActive(true);
         CancelInvoke("EndStun");
         Invoke("EndStun", 1f);
@@ -64,7 +67,7 @@ public class Caster : MonoBehaviour
 
     public virtual void HideCurrentRuneCallback()
     {
-        runeTimeRoot.SetActive(false);
+        //runeTimeRoot.SetActive(false);
         activeRune = null;
     }
 
@@ -73,5 +76,13 @@ public class Caster : MonoBehaviour
         //float scaledDamage = rune.damage 
         _currentHealth = Mathf.Clamp(_currentHealth - rune.damage, 0f, totalHealth);
         myHealthBarFillImage.fillAmount = _currentHealth / totalHealth;
+
+        if (_currentHealth == 0)
+        {
+            myState = CasterState.dead;
+            anim.Play("Die");
+        }
+        else
+            anim.Play("Get_Hit_Front");
     }
 }

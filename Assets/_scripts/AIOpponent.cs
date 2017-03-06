@@ -1,11 +1,16 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class AIOpponent : Caster
 {
     public float actionTime;
+
     [Range(1,100)]
     public float chanceForAction;
+
+    [Range(1,100)]
+    public float chanceToCounter;
 
     public Image runeImage;
 
@@ -26,16 +31,17 @@ public class AIOpponent : Caster
     {
         bool willCastRune = Random.Range(0, 100) < chanceForAction;
         if (willCastRune)
-            CastRandomRune();
+            CastRune();
         else
             _timer = 0f;
     }
 
-    void CastRandomRune()
+    void CastRune(string runeName = "")
     {
         myState = CasterState.casting;
-        Rune rune = RuneManager.Instance.GetRandomRune();
+        Rune rune = runeName == "" ? RuneManager.Instance.GetRandomRune() : RuneManager.Instance.GetRuneByName(runeName);
         runeImage.sprite = rune.sprite;
+        runeImage.SetNativeSize();
         runeImage.gameObject.SetActive(true);
 
         RuneManager.Instance.StartRune(rune, this);
@@ -44,15 +50,16 @@ public class AIOpponent : Caster
     public override void RuneCastCallback()
     {
         runeImage.gameObject.SetActive(false);
-        runeTimeRoot.SetActive(false);
+        //runeTimeRoot.SetActive(false);
 
+        activeRune = null;
         _timer = 0f;
         myState = CasterState.ready;
     }
 
-    public override void RuneCounteredCallback()
+    public override void MyRuneWasCounteredCallback()
     {
-        base.RuneCounteredCallback();
+        base.MyRuneWasCounteredCallback();
     }
 
     public override void HideCurrentRuneCallback()
@@ -62,5 +69,20 @@ public class AIOpponent : Caster
         runeImage.gameObject.SetActive(false);
         _timer = 0f;
         myState = CasterState.ready;
+    }
+
+    public bool ChanceToCounterRune(Rune rune)
+    {
+        bool willCounter = Random.Range(0, 100) > chanceToCounter;
+        if (willCounter)
+            StartCoroutine(_CounterRune(rune));
+        return willCounter;
+    }
+
+    IEnumerator _CounterRune(Rune rune)
+    {
+        myState = CasterState.casting;
+        yield return new WaitForSeconds(Random.Range(0.5f, RuneManager.Instance.runeTime - 0.25f));
+        CastRune(rune.counterRuneName);
     }
 }

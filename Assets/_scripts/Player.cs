@@ -9,6 +9,7 @@ using PDollarGestureRecognizer;
 public class Player : Caster
 {
     public Transform gestureOnScreenPrefab;
+    public GameObject trailRenderer;
 
     public float runeSuccessScore = 0.88f;
 
@@ -35,10 +36,10 @@ public class Player : Caster
         platform = Application.platform;
         drawArea = new Rect(0, 0, Screen.width - Screen.width / 3, Screen.height);
 
-        //Load pre-made gestures
-        TextAsset[] gesturesXml = Resources.LoadAll<TextAsset>("GestureSet/10-stylus-MEDIUM/");
-        foreach (TextAsset gestureXml in gesturesXml)
-            trainingSet.Add(GestureIO.ReadGestureFromXML(gestureXml.text));
+        ////Load pre-made gestures
+        //TextAsset[] gesturesXml = Resources.LoadAll<TextAsset>("GestureSet/10-stylus-MEDIUM/");
+        //foreach (TextAsset gestureXml in gesturesXml)
+        //    trainingSet.Add(GestureIO.ReadGestureFromXML(gestureXml.text));
 
         //Load user custom gestures
         string[] filePaths = Directory.GetFiles(Application.persistentDataPath, "*.xml");
@@ -97,6 +98,9 @@ public class Player : Caster
 
                     currentGestureLineRenderer.numPositions = ++vertexCount;
                     currentGestureLineRenderer.SetPosition(vertexCount - 1, Camera.main.ScreenToWorldPoint(new Vector3(virtualKeyPosition.x, virtualKeyPosition.y, 10)));
+
+                    Vector2 pos = Camera.main.ScreenToWorldPoint(new Vector3(virtualKeyPosition.x, virtualKeyPosition.y, 10));
+                    trailRenderer.transform.position = pos;
                 }
 
                 if (Input.GetMouseButtonUp(0) && !recognized)
@@ -117,7 +121,8 @@ public class Player : Caster
 
     void RuneSuccess(Result runeResult)
     {
-        recognizedRuneText.text = runeResult.GestureClass;
+        if (recognizedRuneText)
+            recognizedRuneText.text = runeResult.GestureClass;
 
         Rune rune = RuneManager.Instance.GetRuneByName(runeResult.GestureClass);
         RuneManager.Instance.StartRune(rune, this);
@@ -125,7 +130,8 @@ public class Player : Caster
 
     void RuneFailure(Result runeResult)
     {
-        recognizedRuneText.text = "the rune fades to nothing...";
+        if (recognizedRuneText)
+            recognizedRuneText.text = "the rune fades to nothing...";
         ClearRune();
     }
 
@@ -145,14 +151,15 @@ public class Player : Caster
             Destroy(lineRenderer.gameObject);
         }
 
-        recognizedRuneText.text = "";
-        runeTimeRoot.SetActive(false);
+        if (recognizedRuneText)
+            recognizedRuneText.text = "";
+        //runeTimeRoot.SetActive(false);
         gestureLinesRenderer.Clear();
     }
 
-    public override void RuneCounteredCallback()
+    public override void MyRuneWasCounteredCallback()
     {
-        base.RuneCounteredCallback();
+        base.MyRuneWasCounteredCallback();
     }
 
     public override void RuneCastCallback()
