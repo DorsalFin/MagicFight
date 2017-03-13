@@ -26,6 +26,8 @@ public class Player : Caster
 
     private bool recognized;
 
+    float rX;
+
     void Start()
     {
         platform = Application.platform;
@@ -45,6 +47,29 @@ public class Player : Caster
 #if UNITY_EDITOR || UNITY_STANDALONE
     void Update()
     {
+        //if (Input.GetMouseButtonDown(1))
+        //    rX = Input.mousePosition.x;
+
+        //if (Input.GetMouseButtonUp(1))
+        //{
+        //    if (Input.mousePosition.x > rX)
+        //    {
+        //        recognized = true;
+
+        //        PDollarGestureRecognizer.Gesture candidate = new PDollarGestureRecognizer.Gesture(points.ToArray());
+        //        Result gestureResult = PointCloudRecognizer.Classify(candidate, trainingSet.ToArray());
+
+        //        if (gestureResult.Score > runeSuccessScore)
+        //            RuneSuccess(gestureResult);
+        //        else
+        //            RuneFailure();
+        //    }
+        //    else
+        //    {
+        //        RuneFailure();
+        //    }
+        //}
+
         if (Input.GetKeyDown(KeyCode.C))
         {
             if (!recognized)

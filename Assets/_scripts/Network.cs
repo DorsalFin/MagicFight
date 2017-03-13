@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Photon;
 using System;
 
@@ -9,6 +10,8 @@ public class Network : Photon.PunBehaviour
     public static Network Instance;
 
     public PhotonView pView;
+
+    public Image connectedImage;
 
     void Awake()
     {
@@ -35,6 +38,7 @@ public class Network : Photon.PunBehaviour
     public override void OnJoinedRoom()
     {
         Debug.Log("joined room!");
+        connectedImage.color = Color.green;
     }
 
     public override void OnPhotonPlayerConnected(PhotonPlayer newPlayer)
