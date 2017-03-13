@@ -12,6 +12,9 @@ public class AIOpponent : Caster
     [Range(1,100)]
     public float chanceToCounter;
 
+    [Range(0.1f,1f)]
+    public float runeStrength;
+
     public Image runeImage;
 
     float _timer;
@@ -39,7 +42,8 @@ public class AIOpponent : Caster
     void CastRune(string runeName = "")
     {
         myState = CasterState.casting;
-        Rune rune = runeName == "" ? RuneManager.Instance.GetRandomRune() : RuneManager.Instance.GetRuneByName(runeName);
+        Rune rune = runeName == "" ? RuneManager.Instance.CloneRandomRune() : RuneManager.Instance.CloneRuneByName(runeName);
+        rune.power = runeStrength;
         runeImage.sprite = rune.sprite;
         runeImage.SetNativeSize();
         runeImage.gameObject.SetActive(true);

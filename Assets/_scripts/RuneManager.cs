@@ -8,7 +8,20 @@ public class Rune
     public string runeName;
     public string counterRuneName;
     public Sprite sprite;
-    public float damage;
+    public int baseDamage;
+
+    [HideInInspector]
+    public float power;
+
+    public Rune Clone()
+    {
+        Rune clonedRune = new Rune();
+        clonedRune.runeName = runeName;
+        clonedRune.counterRuneName = counterRuneName;
+        clonedRune.sprite = sprite;
+        clonedRune.baseDamage = baseDamage;
+        return clonedRune;
+    }
 }
 
 public class RuneManager : MonoBehaviour
@@ -34,49 +47,56 @@ public class RuneManager : MonoBehaviour
 
     void Update()
     {
-        if (_countingLeft)
+        if (PhotonNetwork.inRoom && PhotonNetwork.isMasterClient)
         {
-            _timerLeft += Time.deltaTime;
+            if (_countingLeft)
+            {
+                _timerLeft += Time.deltaTime;
 
-            //leftCaster.runeTimeFillImage.fillAmount = _timerLeft / runeTime;
+                if (_timerLeft > runeTime)
+                    CastRune(leftCaster);
+            }
 
-            if (_timerLeft > runeTime)
-                CastRune(leftCaster);
-        }
+            if (_countingRight)
+            {
+                _timerRight += Time.deltaTime;
 
-        if (_countingRight)
-        {
-            _timerRight += Time.deltaTime;
-
-            //rightCaster.runeTimeFillImage.fillAmount = _timerRight / runeTime;
-
-            if (_timerRight > runeTime)
-                CastRune(rightCaster);
+                if (_timerRight > runeTime)
+                    CastRune(rightCaster);
+            }
         }
     }
 
-    public Rune GetRuneByName(string runeName)
+    public Rune CloneRuneByName(string runeName)
     {
         foreach (Rune rune in runes)
+        {
             if (rune.runeName == runeName)
-                return rune;
+            {
+                // TODO new copy of rune
+                return rune.Clone();
+            }
+        }
 
         return null;
     }
 
-    public Rune GetRandomRune()
+    public Rune CloneRandomRune()
     {
         int idx = Random.Range(0, runes.Count);
-        return runes[idx];
+        return runes[idx].Clone();
     }
 
+    /// <summary>
+    /// a player has swiped right and 'created' their rune. only the host will receive this call and should push the result
+    /// to all clients
+    /// </summary>
+    /// <param name="rune"></param>
+    /// <param name="caster"></param>
     public void StartRune(Rune rune, Caster caster)
     {
         caster.activeRune = rune;
         caster.anim.Play("Summon");
-
-        //caster.runeTimeFillImage.fillAmount = 0f;
-        //caster.runeTimeRoot.SetActive(true);
 
         Caster otherCaster = OtherCaster(caster);
 
@@ -88,6 +108,9 @@ public class RuneManager : MonoBehaviour
 
             caster.HideCurrentRuneCallback();
             otherCaster.MyRuneWasCounteredCallback();
+
+            // tell the client a rune was countered
+            Network.Instance.pView.RPC("RuneCountered", PhotonTargets.Others, otherCaster == leftCaster);
         }
         else
         {
@@ -102,6 +125,10 @@ public class RuneManager : MonoBehaviour
                 _countingLeft = true;
             }
 
+            // tell the client this rune was successfully cast
+            Network.Instance.pView.RPC("RuneSuccessfullyCreated", PhotonTargets.Others, rune.runeName, rune.power, caster == leftCaster);
+
+            // AI chance to counter your rune
             if (otherCaster is AIOpponent && otherCaster.activeRune == null)
             {
                 AIOpponent ai = otherCaster as AIOpponent;
@@ -115,27 +142,25 @@ public class RuneManager : MonoBehaviour
         }
     }
 
-    void CastRune(Caster caster)
+    public void CastRune(Caster caster)
     {
-        // BOOM we hit for the rune's damage
+        if (PhotonNetwork.isMasterClient)
+        {
+            _countingLeft = false;
+            _timerLeft = 0f;
+            _countingRight = false;
+            _timerRight = 0f;
+
+            // need to notify the client a rune has been successfully cast
+            Network.Instance.pView.RPC("RuneWasCast", PhotonTargets.Others, caster == leftCaster);
+        }
 
         Caster otherCaster = OtherCaster(caster);
         if (otherCaster.activeRune != null)
             otherCaster.MyRuneWasCounteredCallback();
+
         otherCaster.HitByRune(caster.activeRune);
-
         caster.RuneCastCallback();
-
-        //if (caster == leftCaster)
-        //{
-            _countingLeft = false;
-            _timerLeft = 0f;
-        //}
-        //else
-        //{
-            _countingRight = false;
-            _timerRight = 0f;
-        //}
     }
 
     Caster OtherCaster(Caster caster)
@@ -144,5 +169,11 @@ public class RuneManager : MonoBehaviour
             return rightCaster;
         else
             return leftCaster;
+    }
+
+    public void CancelRightRune()
+    {
+        _countingRight = false;
+        _timerRight = 0f;
     }
 }

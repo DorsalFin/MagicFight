@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using PDollarGestureRecognizer;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,15 +12,22 @@ public enum CasterState
     dead = 3
 }
 
-public class Caster : MonoBehaviour
+public class Caster : Photon.PunBehaviour
 {
+    public PhotonView pView;
+
     public string myName;
     public CasterState myState = CasterState.ready;
 
-    public float totalHealth;
+    public int totalHealth;
+    public EnergyBar healthBar;
 
-    public GameObject myHealthBarRoot;
-    public Image myHealthBarFillImage;
+    public Transform gestureOnScreenPrefab;
+
+    public GameObject trailRenderer;
+    protected List<Point> points = new List<Point>();
+    protected int strokeId = -1;
+    protected int vertexCount = 0;
 
     public Animator anim;
 
@@ -29,21 +37,25 @@ public class Caster : MonoBehaviour
     public float counterStunnedTime = 1f;
     public Image myRuneWasblockedImage;
 
-    [Header("If you want rune name to show when cast")]
-    public Text recognizedRuneText;
-
     [HideInInspector]
     public Rune activeRune;
 
-    float _currentHealth;
+    int _currentHealth;
 
     void Awake()
     {
         _currentHealth = totalHealth;
-        myHealthBarFillImage.fillAmount = 1f;
-        //runeTimeFillImage.fillAmount = 0f;
-        //runeTimeRoot.SetActive(false);
+        healthBar.valueMax = totalHealth;
+        healthBar.valueCurrent = totalHealth;
     }
+
+    public virtual void OneFingerDown(object sender, System.EventArgs e) { }
+
+    public virtual void OneFingerMoved(object sender, System.EventArgs e) { }
+
+    public virtual void OneFingerEnded(object sender, System.EventArgs e) { }
+
+    public virtual void FlickOccured(object sender, System.EventArgs e) { }
 
     public virtual void RuneCastCallback() { }
 
@@ -67,15 +79,14 @@ public class Caster : MonoBehaviour
 
     public virtual void HideCurrentRuneCallback()
     {
-        //runeTimeRoot.SetActive(false);
         activeRune = null;
     }
 
     public virtual void HitByRune(Rune rune)
     {
-        //float scaledDamage = rune.damage 
-        _currentHealth = Mathf.Clamp(_currentHealth - rune.damage, 0f, totalHealth);
-        myHealthBarFillImage.fillAmount = _currentHealth / totalHealth;
+        int scaledDmg = Mathf.RoundToInt((float)rune.baseDamage * rune.power);
+        _currentHealth = Mathf.Clamp(_currentHealth - scaledDmg, 0, totalHealth);
+        healthBar.SetValueCurrent(_currentHealth);
 
         if (_currentHealth == 0)
         {
@@ -85,4 +96,6 @@ public class Caster : MonoBehaviour
         else
             anim.Play("Get_Hit_Front");
     }
+
+    public virtual void MoveTrailRenderer(Vector3 position) { }
 }
